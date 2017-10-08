@@ -1,0 +1,27 @@
+10-04-2017
+----------
+
+Next steps:
+- Fix "rename" to correctly handle renamed directories:
+  - While frozen_files has a subpath of renamed directory, sleep without holding any lock.
+  - Once it doesn't, become a reader, and get the pending_commits lock.
+  - Go through pending_commits and pending_luc and rewrite anything that's a subpath of the renamed directory.
+  - Perform the rename while holding the pending_commits lock.
+- Rewrite lock library to use POSIX locks, not spinlocks.
+
+Also change shell script on Baelfire to kill everything when lower level is disconnected through FUSE.
+
+10-05-2017
+----------
+
+Locking protocol:
+- Doing pretty much anything at all requires holding onto
+  frozen_files_lock as a reader, else someone could add the file
+  you're working on to frozen_files while you're doing stuff with it.
+- If you need to make sure the commits thread is not copying or
+  mkdiring, hold active_commits_lock.
+- Locking order:
+  - frozen_files_lock (writer)
+  - active_commits_lock
+  - pending_commits_lock
+  

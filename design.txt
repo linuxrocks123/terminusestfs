@@ -1,0 +1,38 @@
+Modes:
+- One-way: Any modification triggers 60-second delayed copy from upper
+           to lower filesystem.
+           
+           Read accesses are from upper if file present, lower if not.
+
+           Write accesses force file to be copied from lower to upper
+           immediately if not present.
+           
+- Two-way: Any modification triggers 60-second delayed copy from upper
+           to lower filesystem.
+
+           Read accesses are from whichever has the most recent
+           timestamp.
+
+           A read access from lower where upper file exists triggers
+           an immediate deletion of the file from upper.
+
+           Any write access also triggers such a deletion; before the
+           file is written to, it is fake-read from.
+
+           Write accesses then force file to be copied from lower to
+           upper immediately if not present.
+           
+           Any read access from lower triggers a delayed copy to upper.
+
+In both cases:
+- While a file is being copied from lower to upper, it is locked and
+  may not be accessed in any way.  Attempted accesses hang until the
+  copy is completed.
+- If a file is queued to be copied from upper to lower and is again
+  modified, the pending copy is deleted from the queue.
+- If a file is currently being copied from upper to lower and is again
+  modified, the copy is not aborted, but another 60-second delayed one
+  is added to the back of the queue.
+
+If the process is killed:
+- rsync -uvh from upper to lower and you're good.
